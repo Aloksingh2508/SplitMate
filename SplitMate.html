@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SplitMate</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f2a;--mut:#6b7280;--pri:#4f46e5;--ok:#16a34a;--bad:#dc2626;--bd:#e5e7eb}
+:root[data-t=dark]{--bg:#0f1220;--card:#181c30;--tx:#e8eaf2;--mut:#9aa3b8;--bd:#2a3050}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;max-width:1000px;margin:auto}
+h1{margin:0;font-size:22px}h1 span{color:var(--pri)}
+main{max-width:1000px;margin:auto;padding:0 20px 40px;display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px}
+.card.w{grid-column:1/-1}h2{margin:0 0 12px;font-size:16px}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+input,select,button{font:inherit;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%}
+button{background:var(--pri);color:#fff;border:0;cursor:pointer;margin-top:14px;font-weight:600}
+button.g{background:none;color:var(--tx);border:1px solid var(--bd);width:auto;margin:0;padding:6px 12px}
+.row{display:flex;gap:8px;align-items:center;margin-top:6px}.row span{min-width:70px}
+.bal{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd)}
+.pos{color:var(--ok);font-weight:600}.neg{color:var(--bad);font-weight:600}
+.err{color:var(--bad);margin-top:10px;min-height:18px}.mut{color:var(--mut)}
+.st{padding:10px;border-radius:10px;background:var(--bg);margin-bottom:8px}
+</style></head><body>
+<header><h1>Split<span>Mate</span> 💸</h1><button class="g" onclick="tog()">🌓 Theme</button></header>
+<main>
+<section class="card"><h2>👥 Group members</h2>
+<label>Comma-separated names</label>
+<input id="mem" value="Alok, Rahul, Aman, Rohit" oninput="members()">
+</section>
+<section class="card"><h2>➕ Add expense</h2>
+<label>Title</label><input id="t" value="Room Rent">
+<label>Amount (₹)</label><input id="a" type="number" min="0" value="4000">
+<label>Date</label><input id="d" type="date">
+<label>Paid by</label><select id="p"></select>
+<label>Split method</label>
+<select id="m" onchange="vals()"><option value="equal">Equal</option><option value="exact">Exact amount</option><option value="percentage">Percentage</option><option value="shares">Shares</option></select>
+<div id="v"></div>
+<button onclick="add()">Add expense</button><div class="err" id="e"></div>
+</section>
+<section class="card"><h2>🧾 Expenses</h2><div id="ex" class="mut">No expenses yet.</div></section>
+<section class="card"><h2>⚖️ Balances</h2><div id="bl" class="mut">—</div></section>
+<section class="card w"><h2>📅 Daily payments</h2><div id="dy" class="mut">No payments yet.</div></section>
+<section class="card w"><h2>➗ Quick divide money</h2>
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px"><div><label>Amount (₹)</label><input id="qa" type="number" min="0" value="2500"></div>
+<div><label>People (comma-separated)</label><input id="qp" value="Alok, Rahul, Aman"></div></div>
+<button onclick="qd()">Divide</button><div id="qo" style="margin-top:12px"></div></section>
+<section class="card w"><h2>🤝 Settle up (fewest payments)</h2><div id="se" class="mut">—</div></section>
+</main>
+<script>
+const today=()=>new Date().toISOString().slice(0,10);
+const $=id=>document.getElementById(id);let M=[],X=[];
+const R=n=>"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
+function tog(){const r=document.documentElement;r.dataset.t=r.dataset.t=="dark"?"":"dark"}
+function members(){M=$("mem").value.split(",").map(s=>s.trim()).filter(Boolean);
+ $("p").innerHTML=M.map(n=>`<option>${n}</option>`).join("");vals()}
+function vals(){const m=$("m").value,u={equal:"",exact:"₹",percentage:"%",shares:"sh"}[m];
+ $("v").innerHTML=m=="equal"?`<div class="mut" style="margin-top:8px">Shared equally by everyone.</div>`:
+ M.map(n=>`<div class="row"><span>${n}</span><input data-n="${n}" type="number" min="0" value="${m=="shares"?1:""}" placeholder="${u}"></div>`).join("")}
+function build(){const m=$("m").value,v={};
+ if(m=="equal")M.forEach(n=>v[n]=null);
+ else document.querySelectorAll("#v input").forEach(i=>{if(i.value!=="")v[i.dataset.n]=+i.value});
+ return{date:$("d").value||today(),title:$("t").value||"Expense",amount:+$("a").value,paid_by:$("p").value,method:m,values:v}}
+const P=x=>Math.round(x*100);
+function dist(t,w){const tw=w.reduce((a,b)=>a+b,0);if(tw<=0)throw new Error("Total weight must be positive");
+ const b=w.map(x=>Math.floor(t*x/tw));const r=t-b.reduce((a,c)=>a+c,0);
+ w.map((_,i)=>i).sort((i,j)=>((t*w[j])%tw)-((t*w[i])%tw)).slice(0,r).forEach(i=>b[i]++);return b}
+function split(e){const t=P(e.amount);if(!(t>0))throw new Error("Amount must be positive");
+ const u=Object.keys(e.values);if(!u.length)throw new Error("At least one participant is required");let p;
+ if(e.method=="equal")p=dist(t,u.map(()=>1));
+ else if(e.method=="shares"){const w=u.map(k=>+e.values[k]||0);if(w.some(x=>x<=0||!Number.isInteger(x)))throw new Error("Shares must be positive whole numbers");p=dist(t,w)}
+ else if(e.method=="percentage"){const w=u.map(k=>P(+e.values[k]||0));if(w.some(x=>x<0)||w.reduce((a,b)=>a+b,0)!=10000)throw new Error("Percentages must total 100");p=dist(t,w)}
+ else{p=u.map(k=>P(+e.values[k]||0));if(p.some(x=>x<0))throw new Error("Amounts cannot be negative");const s=p.reduce((a,b)=>a+b,0);if(s!=t)throw new Error(`Split total ${s/100} does not match expense ${t/100}`)}
+ return Object.fromEntries(u.map((k,i)=>[k,p[i]]))}
+async function calc(list){const net={};
+ for(const e of list){const s=split(e);net[e.paid_by]=(net[e.paid_by]||0)+P(e.amount);for(const k in s)net[k]=(net[k]||0)-s[k]}
+ const c=Object.entries(net).filter(([,b])=>b>0).map(([n,b])=>[n,b]).sort((a,b)=>b[1]-a[1]);
+ const d=Object.entries(net).filter(([,b])=>b<0).map(([n,b])=>[n,-b]).sort((a,b)=>b[1]-a[1]);
+ const settlements=[];let i=0,j=0;
+ while(i<d.length&&j<c.length){const m=Math.min(d[i][1],c[j][1]);settlements.push({from:d[i][0],to:c[j][0],amount:m/100});d[i][1]-=m;c[j][1]-=m;if(!d[i][1])i++;if(!c[j][1])j++}
+ return{balances:Object.fromEntries(Object.entries(net).map(([n,b])=>[n,b/100])),settlements}}
+async function add(){$("e").textContent="";const e=build();
+ try{const d=await calc([...X,e]);X.push(e);render(d)}catch(x){$("e").textContent=x.message}}
+function qd(){const n=$("qp").value.split(",").map(s=>s.trim()).filter(Boolean),t=P(+$("qa").value);
+ if(!(t>0)||!n.length){$("qo").innerHTML='<span class="neg">Enter an amount and at least one person.</span>';return}
+ const s=dist(t,n.map(()=>1));$("qo").innerHTML=n.map((x,i)=>`<div class="bal"><span>${x}</span><b>${R(s[i]/100)}</b></div>`).join("")+`<div class="bal"><span class="mut">Total</span><b>${R(t/100)}</b></div>`}
+function daily(){const g={};X.forEach(e=>(g[e.date]=g[e.date]||[]).push(e));
+ $("dy").innerHTML=Object.keys(g).sort().reverse().map(k=>{const L=g[k],tot=L.reduce((a,e)=>a+e.amount,0);
+  return `<div class="st"><b>${new Date(k+"T00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</b><b style="float:right">${R(tot)}</b>`+
+  L.map(e=>`<div class="mut" style="margin-top:4px">${e.title} · paid by ${e.paid_by} · ${R(e.amount)}</div>`).join("")+`</div>`}).join("")||"No payments yet."}
+function render(d){daily();
+ $("ex").innerHTML=X.map((e,i)=>`<div class="bal"><span>${e.title} <span class="mut">· ${e.date} · ${e.paid_by} · ${e.method}</span></span><b>${R(e.amount)} <a href="#" onclick="del(${i});return false" style="text-decoration:none">✕</a></b></div>`).join("")||"No expenses yet.";
+ $("bl").innerHTML=Object.entries(d.balances).map(([n,b])=>`<div class="bal"><span>${n}</span><span class="${b>0?"pos":b<0?"neg":""}">${b>0?"Receives "+R(b):b<0?"Owes "+R(-b):"Settled"}</span></div>`).join("")||"—";
+ $("se").innerHTML=d.settlements.map(s=>`<div class="st"><b>${s.from}</b> → <b>${s.to}</b> <b class="pos" style="float:right">${R(s.amount)}</b></div>`).join("")||"✅ All settled!"}
+async function del(i){X.splice(i,1);X.length?render(await calc(X)):(render({balances:{},settlements:[]}),$("ex").textContent="No expenses yet.")}
+$("d").value=today();members();
+</script></body></html>
