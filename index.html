@@ -1,67 +1,213 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SplitMate</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SplitMate – Smart Group Expense Manager</title>
 <style>
-:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f2a;--mut:#6b7280;--pri:#4f46e5;--ok:#16a34a;--bad:#dc2626;--bd:#e5e7eb}
-:root[data-t=dark]{--bg:#0f1220;--card:#181c30;--tx:#e8eaf2;--mut:#9aa3b8;--bd:#2a3050}
-*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;max-width:1000px;margin:auto}
-h1{margin:0;font-size:22px}h1 span{color:var(--pri)}
-main{max-width:1000px;margin:auto;padding:0 20px 40px;display:grid;gap:16px;grid-template-columns:1fr 1fr}
-@media(max-width:760px){main{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px}
-.card.w{grid-column:1/-1}h2{margin:0 0 12px;font-size:16px}
-label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
-input,select,button{font:inherit;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%}
-button{background:var(--pri);color:#fff;border:0;cursor:pointer;margin-top:14px;font-weight:600}
-button.g{background:none;color:var(--tx);border:1px solid var(--bd);width:auto;margin:0;padding:6px 12px}
-.row{display:flex;gap:8px;align-items:center;margin-top:6px}.row span{min-width:70px}
-.bal{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd)}
-.pos{color:var(--ok);font-weight:600}.neg{color:var(--bad);font-weight:600}
-.err{color:var(--bad);margin-top:10px;min-height:18px}.mut{color:var(--mut)}
-.st{padding:10px;border-radius:10px;background:var(--bg);margin-bottom:8px}
-</style></head><body>
-<header><h1>Split<span>Mate</span> 💸</h1><button class="g" onclick="tog()">🌓 Theme</button></header>
-<main>
-<section class="card"><h2>👥 Group members</h2>
-<label>Comma-separated names</label>
-<input id="mem" value="Alok, Rahul, Aman, Rohit" oninput="members()">
-</section>
-<section class="card"><h2>➕ Add expense</h2>
-<label>Title</label><input id="t" value="Room Rent">
-<label>Amount (₹)</label><input id="a" type="number" min="0" value="4000">
-<label>Paid by</label><select id="p"></select>
-<label>Split method</label>
-<select id="m" onchange="vals()"><option value="equal">Equal</option><option value="exact">Exact amount</option><option value="percentage">Percentage</option><option value="shares">Shares</option></select>
-<div id="v"></div>
-<button onclick="add()">Add expense</button><div class="err" id="e"></div>
-</section>
-<section class="card"><h2>🧾 Expenses</h2><div id="ex" class="mut">No expenses yet.</div></section>
-<section class="card"><h2>⚖️ Balances</h2><div id="bl" class="mut">—</div></section>
-<section class="card w"><h2>🤝 Settle up (fewest payments)</h2><div id="se" class="mut">—</div></section>
-</main>
+:root{--bg:#f5f6fb;--card:#fff;--tx:#161a2e;--mu:#6b7191;--bd:#e4e7f2;--pr:#5b5bf0;--pr2:#8b5cf6;--gr:#12a56b;--rd:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root:not([data-theme="light"]){}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1020;--card:#171a30;--tx:#eceefa;--mu:#9aa0c4;--bd:#272b4a}}
+:root[data-theme="dark"]{--bg:#0e1020;--card:#171a30;--tx:#eceefa;--mu:#9aa0c4;--bd:#272b4a}
+*{box-sizing:border-box}html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.shell{display:flex;min-height:100vh}
+.side{width:230px;padding:22px 14px;border-right:1px solid var(--bd);background:var(--card);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.logo{font-weight:800;font-size:20px;padding:0 10px 18px;background:linear-gradient(90deg,var(--pr),var(--pr2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.nav{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:var(--mu);cursor:pointer;border:0;background:none;font:inherit;text-align:left;width:100%;transition:.2s}
+.nav:hover{background:var(--bg)}.nav.on{background:linear-gradient(90deg,var(--pr),var(--pr2));color:#fff}
+main{flex:1;padding:26px;max-width:1000px;width:100%;margin:0 auto;animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+h1{margin:0 0 4px;font-size:26px}h2{font-size:17px;margin:0 0 12px}.mu{color:var(--mu)}.sm{font-size:13px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:16px 0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(30,30,80,.04)}
+.grid .card{margin:0}.big{font-size:26px;font-weight:800}.gr{color:var(--gr)}.rd{color:var(--rd)}
+.hero{background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff;border:0}.hero .mu{color:#e3e0ff}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}.row:last-child{border:0}
+.ic{width:38px;height:38px;border-radius:12px;background:var(--bg);display:grid;place-items:center;font-size:19px;flex:none}
+.l{display:flex;gap:12px;align-items:center;min-width:0}
+button.b{background:linear-gradient(90deg,var(--pr),var(--pr2));color:#fff;border:0;padding:9px 16px;border-radius:12px;font:inherit;font-weight:600;cursor:pointer}
+button.g{background:var(--bg);color:var(--tx);border:1px solid var(--bd);padding:7px 12px;border-radius:10px;font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--pr);outline-offset:2px}
+input,select{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:9px 11px;font:inherit;width:100%}
+label{font-size:13px;color:var(--mu);display:block;margin:10px 0 4px}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;background:var(--bg);border:1px solid var(--bd)}
+.bar{height:10px;border-radius:6px;background:var(--bg);overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pr),var(--pr2));border-radius:6px;transition:width .5s}
+.pie{width:140px;height:140px;border-radius:50%;flex:none}
+.flex{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+#modal{position:fixed;inset:0;background:rgba(10,10,30,.55);display:none;align-items:center;justify-content:center;padding:14px;z-index:20}
+#modal.on{display:flex}#modal .card{width:100%;max-width:480px;max-height:92vh;overflow:auto;margin:0}
+.err{color:var(--rd);font-size:13px;min-height:18px;margin-top:6px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--bd);font-size:14px}th{color:var(--mu);font-weight:500}
+textarea{width:100%;margin-top:10px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px;font:inherit;resize:vertical}
+.sel{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.bot{display:none}
+@media(max-width:760px){.side{display:none}main{padding:16px 14px 90px}
+.bot{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--bd);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-around;z-index:10}
+.bot button{background:none;border:0;color:var(--mu);font:11px inherit;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer}.bot button.on{color:var(--pr)}.bot span{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" id="side"></aside>
+  <main id="app"></main>
+</div>
+<nav class="bot" id="bot"></nav>
+<div id="modal"><div class="card" id="mbody"></div></div>
 <script>
-const $=id=>document.getElementById(id);let M=[],X=[];
-const R=n=>"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
-function tog(){const r=document.documentElement;r.dataset.t=r.dataset.t=="dark"?"":"dark"}
-function members(){M=$("mem").value.split(",").map(s=>s.trim()).filter(Boolean);
- $("p").innerHTML=M.map(n=>`<option>${n}</option>`).join("");vals()}
-function vals(){const m=$("m").value,u={equal:"",exact:"₹",percentage:"%",shares:"sh"}[m];
- $("v").innerHTML=m=="equal"?`<div class="mut" style="margin-top:8px">Shared equally by everyone.</div>`:
- M.map(n=>`<div class="row"><span>${n}</span><input data-n="${n}" type="number" min="0" value="${m=="shares"?1:""}" placeholder="${u}"></div>`).join("")}
-function build(){const m=$("m").value,v={};
- if(m=="equal")M.forEach(n=>v[n]=null);
- else document.querySelectorAll("#v input").forEach(i=>{if(i.value!=="")v[i.dataset.n]=+i.value});
- return{title:$("t").value||"Expense",amount:+$("a").value,paid_by:$("p").value,method:m,values:v}}
-async function calc(list){const r=await fetch("/calc/settle",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(list)});
- const d=await r.json();if(!r.ok)throw new Error(typeof d.detail=="string"?d.detail:"Please check the amount and split values");return d}
-async function add(){$("e").textContent="";const e=build();
- try{const d=await calc([...X,e]);X.push(e);render(d)}catch(x){$("e").textContent=x.message}}
-function render(d){
- $("ex").innerHTML=X.map((e,i)=>`<div class="bal"><span>${e.title} <span class="mut">· ${e.paid_by} · ${e.method}</span></span><b>${R(e.amount)} <a href="#" onclick="del(${i});return false" style="text-decoration:none">✕</a></b></div>`).join("")||"No expenses yet.";
- $("bl").innerHTML=Object.entries(d.balances).map(([n,b])=>`<div class="bal"><span>${n}</span><span class="${b>0?"pos":b<0?"neg":""}">${b>0?"Receives "+R(b):b<0?"Owes "+R(-b):"Settled"}</span></div>`).join("")||"—";
- $("se").innerHTML=d.settlements.map(s=>`<div class="st"><b>${s.from}</b> → <b>${s.to}</b> <b class="pos" style="float:right">${R(s.amount)}</b></div>`).join("")||"✅ All settled!"}
-async function del(i){X.splice(i,1);X.length?render(await calc(X)):(render({balances:{},settlements:[]}),$("ex").textContent="No expenses yet.")}
-members();
-</script></body></html>
+let ME='';
+const CATS={Room:'🏠',Rent:'🏘️',Electricity:'💡',Water:'💧',Food:'🍔',Transport:'🚕',Travel:'✈️',Shopping:'🛒',Entertainment:'🎬',Recharge:'📱',Medical:'💊',Other:'🧾'};
+const NAV=[['dash','🏠','Dashboard'],['groups','👥','Groups'],['notes','📝','Daily Notes'],['settle','🤝','Settle Up'],['stats','📊','Analytics']];
+const fmt=p=>'₹'+(p/100).toLocaleString('en-IN',{maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------- money logic (integer paise) ---------- */
+function alloc(amt,w){const t=Object.values(w).reduce((a,b)=>a+b,0),raw={},o={};
+  for(const k in w){raw[k]=amt*w[k]/t;o[k]=Math.floor(raw[k])}
+  let r=amt-Object.values(o).reduce((a,b)=>a+b,0);
+  Object.keys(raw).sort((a,b)=>(raw[b]-o[b])-(raw[a]-o[a])).slice(0,r).forEach(k=>o[k]++);return o}
+function splits(amt,m,v){const ks=Object.keys(v);if(!(amt>0))throw'Amount must be positive';if(!ks.length)throw'Select at least one member';
+  if(m==='equal')return alloc(amt,Object.fromEntries(ks.map(k=>[k,1])));
+  if(m==='exact'){const s=ks.reduce((a,k)=>a+Math.round(v[k]*100),0);if(s!==amt)throw`Amounts add up to ${fmt(s)}, expected ${fmt(amt)}`;return Object.fromEntries(ks.map(k=>[k,Math.round(v[k]*100)]))}
+  const s=ks.reduce((a,k)=>a+v[k],0);
+  if(m==='percentage'&&Math.abs(s-100)>.01)throw`Percentages add up to ${s}%, must be 100%`;
+  if(m==='shares'&&!(s>0))throw'Shares must be positive';
+  if(ks.some(k=>v[k]<0))throw'Negative value';return alloc(amt,v)}
+function net(gid){const g=S.groups.find(x=>x.id===gid),n=Object.fromEntries(g.members.map(m=>[m,0]));
+  S.exp.filter(e=>e.g===gid).forEach(e=>{n[e.by]+=e.amt;for(const u in e.sp)n[u]-=e.sp[u]});
+  S.set.filter(s=>s.g===gid&&s.st==='confirmed').forEach(s=>{n[s.from]+=s.amt;n[s.to]-=s.amt});return n}
+function simplify(n){const c=[],d=[];for(const u in n){if(n[u]>0)c.push([u,n[u]]);else if(n[u]<0)d.push([u,-n[u]])}
+  c.sort((a,b)=>b[1]-a[1]);d.sort((a,b)=>b[1]-a[1]);const o=[];let i=0,j=0;
+  while(i<d.length&&j<c.length){const p=Math.min(d[i][1],c[j][1]);o.push({from:d[i][0],to:c[j][0],amt:p});d[i][1]-=p;c[j][1]-=p;if(!d[i][1])i++;if(!c[j][1])j++}return o}
+const status=v=>v>0?`<span class="gr">You will receive ${fmt(v)}</span>`:v<0?`<span class="rd">You owe ${fmt(-v)}</span>`:'<span class="mu">Settled ✓</span>';
+/* ---------- state ---------- */
+let S,view='dash',gid=1,month='all';
+function seed(){return{nid:1,me:'',groups:[],exp:[],set:[]}}
+try{S=JSON.parse(localStorage.getItem('splitmate2'))}catch(e){}
+if(!S||!S.groups)S=seed();
+S.notes=S.notes||{};ME=S.me||'';
+const save=()=>{try{localStorage.setItem('splitmate2',JSON.stringify(S))}catch(e){}};
+const grp=id=>S.groups.find(g=>g.id===id);
+/* ---------- views ---------- */
+function pie(obj){if(!Object.keys(obj).length)return'<div class="mu">No data yet.</div>';const t=Object.values(obj).reduce((a,b)=>a+b,0)||1,col=['#5b5bf0','#8b5cf6','#12a56b','#f5a524','#e5484d','#06b6d4','#ec4899','#64748b'];let a=0;
+  const ks=Object.keys(obj),seg=ks.map((k,i)=>{const s=a;a+=obj[k]/t*100;return`${col[i%8]} ${s}% ${a}%`});
+  return`<div class="flex"><div class="pie" style="background:conic-gradient(${seg.join(',')})"></div><div>${ks.map((k,i)=>`<div class="sm"><span style="color:${col[i%8]}">●</span> ${CATS[k]||''} ${esc(k)} — ${fmt(obj[k])}</div>`).join('')}</div></div>`}
+function bars(obj){if(!Object.keys(obj).length)return'<div class="mu">No data yet.</div>';const m=Math.max(1,...Object.values(obj));return Object.entries(obj).map(([k,v])=>`<div style="margin:8px 0"><div class="sm" style="display:flex;justify-content:space-between"><span>${esc(k)}</span><b>${fmt(v)}</b></div><div class="bar"><i style="width:${v/m*100}%"></i></div></div>`).join('')}
+const expRow=(e,me=true)=>`<div class="row"><div class="l"><div class="ic">${CATS[e.cat]||'🧾'}</div><div><b>${esc(e.title)}</b><div class="sm mu">Paid by ${e.by} · ${e.date} · ${grp(e.g).name}</div></div></div><div style="text-align:right"><b>${fmt(e.amt)}</b>${e.sp[ME]!=null?`<div class="sm mu">Your share ${fmt(e.sp[ME])}</div>`:''}</div></div>`;
+function totals(){let paid=0,owe=0,rec=0;S.groups.forEach(g=>{if(!g.members.includes(ME))return;const n=net(g.id)[ME];n>0?rec+=n:owe-=n});
+  S.exp.forEach(e=>{if(e.by===ME)paid+=e.amt});return{paid,owe,rec,all:S.exp.reduce((a,e)=>a+e.amt,0)}}
+const V={
+dash(){const t=totals(),cat={};S.exp.forEach(e=>cat[e.cat]=(cat[e.cat]||0)+e.amt);
+  return`<h1>Hello, ${ME} 👋</h1><div class="mu">Here's where your money stands.</div>
+  <div class="grid"><div class="card hero"><div class="mu">Net Balance</div><div class="big">${fmt(t.rec-t.owe)}</div><div class="sm mu">Receive ${fmt(t.rec)} · Owe ${fmt(t.owe)}</div></div>
+  <div class="card"><div class="mu">Total Group Expenses</div><div class="big">${fmt(t.all)}</div></div>
+  <div class="card"><div class="mu">You Paid</div><div class="big">${fmt(t.paid)}</div></div>
+  <div class="card"><div class="mu">You Will Receive</div><div class="big gr">${fmt(t.rec)}</div></div>
+  <div class="card"><div class="mu">You Owe</div><div class="big rd">${fmt(t.owe)}</div></div></div>
+  <div class="card"><h2>Your Groups</h2>${S.groups.map(g=>{const tot=S.exp.filter(e=>e.g===g.id).reduce((a,e)=>a+e.amt,0);return`<div class="row" style="cursor:pointer" onclick="openG(${g.id})"><div class="l"><div class="ic">${g.icon}</div><div><b>${esc(g.name)}</b><div class="sm mu">👥 ${g.members.length} members</div></div></div><div style="text-align:right"><b>${fmt(tot)}</b><div class="sm">${status(net(g.id)[ME]||0)}</div></div></div>`}).join('')}
+  ${S.groups.length?'':'<div class="mu">No groups yet.</div>'}<button class="b" style="margin-top:12px" onclick="newGroup()">+ New group</button></div>
+  <div class="card"><h2>Recent Expenses</h2>${[...S.exp].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,5).map(e=>expRow(e)).join('')}</div>
+  <div class="card"><h2>Category-wise spending</h2>${pie(cat)}</div>`},
+groups(){const g=grp(gid),months=[...new Set(S.exp.filter(e=>e.g===gid).map(e=>e.date.slice(0,7)))].sort().reverse();
+  const ex=S.exp.filter(e=>e.g===gid&&(month==='all'||e.date.startsWith(month))).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  const tot=ex.reduce((a,e)=>a+e.amt,0),n=net(gid),paid={},share={};g.members.forEach(m=>paid[m]=share[m]=0);ex.forEach(e=>{paid[e.by]+=e.amt;for(const u in e.sp)share[u]+=e.sp[u]});
+  const trip=g.type==='Trip',cat={};ex.forEach(e=>cat[e.cat]=(cat[e.cat]||0)+e.amt);
+  return`<div class="flex" style="justify-content:space-between"><div><h1>${g.icon} ${esc(g.name)}</h1><div class="mu">${g.type} · ${g.members.join(', ')}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b" onclick="addExp()">+ Add expense</button><button class="g" onclick="addBal()">+ Add balance</button><button class="g" onclick="delGroup(${g.id})">Delete group</button></div></div>
+  <div style="display:flex;gap:8px;margin:14px 0"><select onchange="gid=+this.value;month='all';render()">${S.groups.map(x=>`<option value="${x.id}" ${x.id===gid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  <select onchange="month=this.value;render()"><option value="all">All time</option>${months.map(m=>`<option ${m===month?'selected':''} value="${m}">${new Date(m+'-01').toLocaleString('en',{month:'long',year:'numeric'})}</option>`).join('')}</select></div>
+  <div class="grid"><div class="card"><div class="mu">${trip?'Total Trip Cost':'Total ' + (month==='all'?'':'Monthly ')+'Expense'}</div><div class="big">${fmt(tot)}</div></div>
+  <div class="card"><div class="mu">Per person (avg)</div><div class="big">${fmt(tot/g.members.length)}</div></div></div>
+  <div class="card"><h2>Member balances</h2><div style="overflow-x:auto"><table><tr><th>Member</th><th>Paid</th><th>Share</th><th>Balance</th></tr>${g.members.map(m=>`<tr><td><b>${m}</b></td><td>${fmt(paid[m])}</td><td>${fmt(share[m])}</td><td>${status(n[m])}</td></tr>`).join('')}</table></div></div>
+  ${trip?`<div class="card"><h2>Category-wise</h2>${pie(cat)}</div>`:''}
+  <div class="card"><h2>Expenses</h2>${ex.map(e=>expRow(e)+`<div style="text-align:right;margin-top:-6px"><button class="g sm" onclick="delExp(${e.id})">Delete</button></div>`).join('')||'<div class="mu">No expenses.</div>'}</div>`},
+settle(){const g=grp(gid),n=net(gid),sug=simplify(n),recs=S.set.filter(s=>s.g===gid);
+  return`<h1>Settle Up</h1><select style="margin:10px 0" onchange="gid=+this.value;render()">${S.groups.map(x=>`<option value="${x.id}" ${x.id===gid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  <div class="card"><h2>Smart settlement <span class="chip">${sug.length} transfer${sug.length===1?'':'s'}</span></h2>${sug.map(s=>{const pend=recs.find(r=>r.st!=='confirmed'&&r.from===s.from&&r.to===s.to);
+   return`<div class="row"><div><b>${s.from}</b> → <b>${s.to}</b> <b>${fmt(s.amt)}</b></div>${pend?'<span class="chip">'+pend.st+'</span>':`<button class="b" onclick="mkSet('${s.from}','${s.to}',${s.amt})">Request payment</button>`}</div>`}).join('')||'<div class="mu">Everyone is settled 🎉</div>'}</div>
+  <div class="card"><h2>Settlement history</h2>${recs.map(r=>`<div class="row"><div>${r.from} → ${r.to} <b>${fmt(r.amt)}</b> <span class="chip">${r.st}</span></div><div>${r.st==='pending'?`<button class="g" onclick="setSt(${r.id},'paid')">Mark paid</button>`:r.st==='paid'?`<button class="g" onclick="setSt(${r.id},'confirmed')">Confirm</button>`:'✓'}</div></div>`).join('')||'<div class="mu">No history yet.</div>'}</div>`},
+notes(){const g=grp(gid);if(!g.members.includes(npay))npay=g.members[0];
+  return`<h1>📝 Daily Notes</h1><div class="mu">Write one expense per line with the amount at the end. Totals calculate instantly.</div>
+  <div class="card" style="margin-top:14px"><div style="display:flex;gap:8px;align-items:center"><button class="g" onclick="shiftD(-1)" aria-label="Previous day">‹</button><input type="date" value="${nd}" onchange="nd=this.value||nd;render()"><button class="g" onclick="shiftD(1)" aria-label="Next day">›</button></div>
+  <textarea id="nt" rows="7" placeholder="Write your notes here, one expense per line" oninput="noteInput(this.value)">${esc(S.notes[nd]||'')}</textarea></div>
+  <div class="card"><div class="sel"><div><label>Group</label><select onchange="gid=+this.value;render()">${S.groups.map(x=>`<option value="${x.id}" ${x.id===gid?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+  <div><label>Paid by</label><select onchange="npay=this.value;render()">${g.members.map(m=>`<option ${m===npay?'selected':''}>${m}</option>`).join('')}</select></div>
+  <div><label>Category</label><select onchange="ncat=this.value;render()">${Object.keys(CATS).map(c=>`<option ${c===ncat?'selected':''}>${c}</option>`).join('')}</select>${ncat==='Other'?`<input id="nc" style="margin-top:6px" placeholder="Write the category" value="${esc(ncustom)}" oninput="ncustom=this.value">`:''}</div></div></div>
+  <div id="nres">${noteRes()}</div>`},
+stats(){const cat={},mon={},per={};S.exp.filter(e=>e.g===gid).forEach(e=>{cat[e.cat]=(cat[e.cat]||0)+e.amt;mon[e.date.slice(0,7)]=(mon[e.date.slice(0,7)]||0)+e.amt;per[e.by]=(per[e.by]||0)+e.amt});
+  return`<h1>Analytics</h1><select style="margin:10px 0" onchange="gid=+this.value;render()">${S.groups.map(x=>`<option value="${x.id}" ${x.id===gid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  <div class="card"><h2>Category-wise</h2>${pie(cat)}</div><div class="card"><h2>Monthly expenses</h2>${bars(mon)}</div><div class="card"><h2>Who paid the most</h2>${bars(per)}</div>
+  <button class="g" onclick="toggleTheme()">🌓 Toggle dark / light</button> <button class="g" onclick="ask('Delete all groups, expenses and notes?',()=>{S=seed();ME='';save();render();askName()})">Clear all data</button>`}};
+/* ---------- actions ---------- */
+function render(){if(!grp(gid)&&S.groups.length)gid=S.groups[0].id;
+  document.getElementById('app').innerHTML=(!S.groups.length&&view!=='dash'&&view!=='stats')?`<h1>No groups yet</h1><div class="mu">Create a group to get started.</div><button class="b" style="margin-top:14px" onclick="newGroup()">+ New group</button>`:V[view]();
+  const nv=(c)=>NAV.map(n=>c==='s'?`<button class="nav ${view===n[0]?'on':''}" onclick="go('${n[0]}')">${n[1]} ${n[2]}</button>`:`<button class="${view===n[0]?'on':''}" onclick="go('${n[0]}')"><span>${n[1]}</span>${n[2].split(' ')[0]}</button>`).join('');
+  document.getElementById('side').innerHTML='<div class="logo">💸 SplitMate</div>'+nv('s');document.getElementById('bot').innerHTML=nv('b')}
+function go(v){view=v;render();scrollTo(0,0)}
+function openG(id){gid=id;go('groups')}
+function toggleTheme(){const d=document.documentElement,dark=getComputedStyle(d).getPropertyValue('--bg').trim()==='#0e1020';d.dataset.theme=dark?'light':'dark'}
+const modal=h=>{document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('on')};
+const closeM=()=>document.getElementById('modal').classList.remove('on');
+document.getElementById('modal').onclick=e=>{if(e.target.id==='modal'&&ME)closeM()};
+function addExp(){const g=grp(gid);modal(`<h2>Add expense · ${esc(g.name)}</h2>
+  <label>Title</label><input id="t"><label>Amount (₹)</label><input id="a" type="number" min="0" step="0.01" oninput="rows()">
+  <label>Paid by</label><select id="p">${g.members.map(m=>`<option>${m}</option>`).join('')}</select>
+  <label>Category</label><select id="c">${Object.keys(CATS).map(c=>`<option>${c}</option>`).join('')}</select>
+  <label>Date</label><input id="d" type="date" value="${today()}"><label>Split method</label>
+  <select id="m" onchange="rows()"><option value="equal">Equal</option><option value="exact">Exact amount (₹)</option><option value="percentage">Percentage (%)</option><option value="shares">Shares</option></select>
+  <label>Split between</label><div id="rw"></div><div class="err" id="er"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="g" onclick="closeM()">Cancel</button><button class="b" onclick="saveExp()">Save</button></div>`);rows()}
+function rows(){const g=grp(gid),m=document.getElementById('m').value,a=+document.getElementById('a').value||0;
+  document.getElementById('rw').innerHTML=g.members.map(u=>`<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" style="width:20px" id="k_${u}" checked><span style="flex:1">${u}${m==='equal'&&a?` <span class="mu sm">≈ ${fmt(a*100/g.members.length)}</span>`:''}</span>${m==='equal'?'':`<input id="v_${u}" type="number" step="any" style="width:110px" value="${m==='shares'?1:''}" placeholder="${m==='percentage'?'%':m==='shares'?'shares':'₹'}">`}</div>`).join('')}
+function saveExp(){const g=grp(gid),m=document.getElementById('m').value,er=document.getElementById('er');
+  try{const title=document.getElementById('t').value.trim();if(!title)throw'Enter a title';const amt=Math.round(+document.getElementById('a').value*100);
+  const v={};g.members.forEach(u=>{if(document.getElementById('k_'+u).checked)v[u]=m==='equal'?1:+(document.getElementById('v_'+u).value||0)});
+  const sp=splits(amt,m,v);S.exp.push({id:S.nid++,g:gid,title,amt,cat:document.getElementById('c').value,by:document.getElementById('p').value,date:document.getElementById('d').value,sp});save();closeM();render()}catch(e){er.textContent=e}}
+let _ask=null;
+function ask(msg,fn){_ask=fn;modal(`<h2>Are you sure?</h2><div class="mu">${esc(msg)}</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="g" onclick="closeM()">Cancel</button><button class="b" style="background:var(--rd)" onclick="closeM();_ask&&_ask()">Delete</button></div>`)}
+function delExp(id){ask('Delete this expense?',()=>{S.exp=S.exp.filter(e=>e.id!==id);save();render()})}
+function mkSet(from,to,amt){if(S.set.some(s=>s.g===gid&&s.from===from&&s.to===to&&s.amt===amt&&s.st!=='confirmed'))return;S.set.push({id:S.nid++,g:gid,from,to,amt,st:'pending'});save();render()}
+function setSt(id,st){S.set.find(s=>s.id===id).st=st;save();render()}
+let nd=today(),ncat='Food',npay='',ncustom='';
+function today(){const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function parseNote(t){return t.split('\n').map(r=>r.trim()).filter(Boolean).map(r0=>{const done=r0.startsWith('✓'),raw=r0.replace(/^✓\s*/,'');
+  const m=raw.replace(/₹|rs\.?/gi,'').match(/^(.*?)[\s:=]*(\(?\d[\d.,+*\/x×() -]*)$/);let amt=null,label=raw;
+  if(m){const ex=m[2].replace(/,/g,'').replace(/[x×]/g,'*').trim();
+   if(/^[\d.+*\/() -]+$/.test(ex)){try{const v=Function('"use strict";return('+ex+')')();if(isFinite(v)&&v>=0){amt=Math.round(v*100);label=m[1].replace(/[-:=\s]+$/,'')||'Item'}}catch(e){}}}
+  return{raw,label,amt,done}})}
+function noteRes(){const g=grp(gid),L=parseNote(S.notes[nd]||''),n=g.members.length,tot=L.reduce((a,l)=>a+(l.amt||0),0),todo=L.filter(l=>l.amt>0&&!l.done);
+  const mk=nd.slice(0,7),days=Object.keys(S.notes).filter(d=>d.startsWith(mk)).map(d=>[d,parseNote(S.notes[d]).reduce((a,l)=>a+(l.amt||0),0)]).filter(x=>x[1]>0).sort((a,b)=>b[0].localeCompare(a[0])),mt=days.reduce((a,x)=>a+x[1],0);
+  return`<div class="card"><h2>Calculation</h2>${L.length?`<table>${L.map(l=>`<tr><td>${l.done?'✓ ':''}${esc(l.label)}</td><td style="text-align:right">${l.amt==null?'<span class="mu">note</span>':fmt(l.amt)}</td></tr>`).join('')}
+  <tr><td><b>Day total</b></td><td style="text-align:right"><b>${fmt(tot)}</b></td></tr></table>
+  <div class="grid"><div class="card"><div class="mu sm">Per person (÷ ${n})</div><div class="big">${fmt(tot/n)}</div></div><div class="card"><div class="mu sm">Items</div><div class="big">${L.filter(l=>l.amt!=null).length}</div></div></div>
+  <button class="b" ${todo.length?'':'disabled style="opacity:.5"'} onclick="addLines()">Add ${todo.length} item${todo.length===1?'':'s'} as split expenses</button><div class="sm mu" style="margin-top:6px">Split equally among ${g.members.join(', ')}. Added lines get a ✓ so they aren't added twice.</div>`:'<div class="mu">Start typing above to see totals.</div>'}</div>
+  <div class="card"><h2>${new Date(mk+'-01T00:00:00Z').toLocaleString('en',{month:'long',year:'numeric',timeZone:'UTC'})} notes <span class="chip">${fmt(mt)}</span></h2>${days.map(([d,v])=>`<div class="row" style="cursor:pointer" onclick="nd='${d}';render()"><span>${d}</span><b>${fmt(v)}</b></div>`).join('')||'<div class="mu">No notes this month.</div>'}</div>`}
+function noteInput(v){S.notes[nd]=v;save();document.getElementById('nres').innerHTML=noteRes()}
+function shiftD(k){const d=new Date(nd+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+k);nd=d.toISOString().slice(0,10);render()}
+function addLines(){const g=grp(gid),L=parseNote(S.notes[nd]||'');
+  L.forEach(l=>{if(l.amt>0&&!l.done)S.exp.push({id:S.nid++,g:gid,title:l.label,amt:l.amt,cat:(ncat==='Other'&&ncustom.trim()?ncustom.trim():ncat),by:npay,date:nd,sp:alloc(l.amt,Object.fromEntries(g.members.map(m=>[m,1])))})});
+  S.notes[nd]=L.map(l=>(l.amt>0&&!l.done?'✓ ':l.done?'✓ ':'')+l.raw).join('\n');save();render()}
+function addBal(){const g=grp(gid),o=g.members.map(m=>`<option>${esc(m)}</option>`).join('');
+  modal(`<h2>Add balance · ${esc(g.name)}</h2><div class="mu sm">Record money one member already owes another, such as a previous due or a loan.</div>
+  <label>Who owes</label><select id="bf">${o}</select><label>Owes to</label><select id="bt">${o}</select>
+  <label>Amount (₹)</label><input id="ba" type="number" min="0" step="0.01"><label>Note (optional)</label><input id="bn">
+  <label>Date</label><input id="bd" type="date" value="${today()}"><div class="err" id="er"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="g" onclick="closeM()">Cancel</button><button class="b" onclick="saveBal()">Add</button></div>`);
+  document.getElementById('bt').selectedIndex=Math.min(1,g.members.length-1)}
+function saveBal(){const v=id=>document.getElementById(id).value,f=v('bf'),t=v('bt'),amt=Math.round(+v('ba')*100),er=document.getElementById('er');
+  if(f===t)return er.textContent='Choose two different members';if(!(amt>0))return er.textContent='Enter an amount greater than 0';
+  S.exp.push({id:S.nid++,g:gid,title:v('bn').trim()||'Previous balance',amt,cat:'Other',by:t,date:v('bd')||today(),sp:{[f]:amt}});save();closeM();render()}
+function delGroup(id){const g=grp(id);if(!g)return;ask('Delete "'+g.name+'" with all its expenses and settlements? This cannot be undone.',()=>doDelGroup(id))}
+function doDelGroup(id){
+  S.groups=S.groups.filter(x=>x.id!==id);S.exp=S.exp.filter(e=>e.g!==id);S.set=S.set.filter(s=>s.g!==id);month='all';
+  if(S.groups.length)gid=S.groups[0].id;view=S.groups.length?'groups':'dash';save();render()}
+function newGroup(){modal(`<h2>New group</h2><label>Group name</label><input id="gn"><label>Type</label><select id="gt"><option>Roommates</option><option>Friends</option><option>Trip</option><option>Family</option><option>Office</option><option>Custom</option></select>
+  <label>Members (comma separated, include yourself)</label><input id="gm" value="${esc(ME)}, " placeholder="Names separated by commas"><div class="err" id="er"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="g" onclick="closeM()">Cancel</button><button class="b" onclick="mkGroup()">Create</button></div>`)}
+function mkGroup(){const n=document.getElementById('gn').value.trim(),mem=[...new Set(document.getElementById('gm').value.split(',').map(s=>s.trim()).filter(Boolean))];
+  if(!n||mem.length<2)return document.getElementById('er').textContent='Add a name and at least 2 members';
+  const t=document.getElementById('gt').value;S.groups.push({id:S.nid++,name:n,icon:{Trip:'✈️',Roommates:'🏠',Family:'👨‍👩‍👧',Office:'💼'}[t]||'👥',type:t,members:mem});save();closeM();render()}
+function askName(){modal(`<h2>Welcome to SplitMate</h2><label>Your name</label><input id="nm"><div class="err" id="er"></div><div style="text-align:right;margin-top:10px"><button class="b" onclick="saveName()">Continue</button></div>`)}
+function saveName(){const v=document.getElementById('nm').value.trim();if(!v)return document.getElementById('er').textContent='Enter your name';S.me=ME=v;save();closeM();render()}
+render();if(!ME)askName();
+</script>
+</body>
+</html>
