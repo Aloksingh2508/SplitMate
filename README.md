@@ -1,5 +1,5 @@
 # SplitMate – Smart Group Expense & Money Management
-
+live link- https://aloksingh2508.github.io/SplitMate/
 ## Status
 Milestone 1 (done): calculation engine + FastAPI calc endpoints + tests.
 - Equal / exact / percentage / shares splits, paise-accurate (no rounding drift)
